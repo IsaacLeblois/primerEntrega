@@ -51,7 +51,7 @@ router.get('/:id/productos', async (req, res) => {
         if(!cartFound) {
             res.sendStatus(404)
         } else {
-            res.json(cartFound)
+            res.json(cartFound.productos)
         }
     } catch(err) {
         console.log(err)
@@ -62,13 +62,20 @@ router.post('/:id/productos', async (req, res) => {
     try {
         const cartID = req.params.id
         const productID = req.body.id
+        let lastID = 0
 
         const productToAdd = await productsDB.getById(productID)
         const cartToAdd = await cartsDB.getById(cartID)
 
-        let newArr = [...cartsDB]
-        newArr = cartsDB.cartToAdd.add(productToAdd)
-        await fs.promises.writeFile(`../database/cart.json`, JSON.stringify([newArr]), 'utf-8')  
+        if(cartToAdd.length) {
+            lastID = cartToAdd.productos.length - 1
+        }
+
+        const actCart = [...cartToAdd]
+        actCart.productos.push(productToAdd)
+
+        await cartsDB.deleteAll()
+        await cartsDB.add(actCart)
     } catch(err) {
         console.log(err)
     }
@@ -82,9 +89,11 @@ router.delete('/:cartId/productos/:productId'), async (req, res) => {
         const productToDel = await productsDB.getById(productID)
         const cartToDel = await cartsDB.getById(cartID)
 
-        let newArr = [...cartsDB]
-        newArr = cartsDB.cartToDel.deleteById(productToDel)
-        await fs.promises.writeFile(`../database/cart.json`, JSON.stringify([newArr]), 'utf-8')
+        const actCart = [...cartsDB]
+        actCart.splice(productToDel)
+
+        await cartsDB.deleteAll()
+        await cartsDB.add(actCart)
     } catch(err) {
         console.log(err)
     }
